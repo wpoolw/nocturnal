@@ -1083,7 +1083,7 @@ local main_visibility, menu_visibility, is_home_tab, is_antiaim_tab, is_other_ta
 
     is_home_tab      = {menu.home.main, 'Main'}
     is_antiaim_tab   = {menu.home.main, 'Anti-aimbot'}
-    is_other_tab     = {menu.hpme.main, 'Other'}
+    is_other_tab     = {menu.home.main, 'Other'}
 
     is_other_tab     = {menu.antiaim.main, 'Other'}
     is_builder_tab   = {menu.antiaim.main, 'Builder'}
