@@ -255,10 +255,11 @@ package.preload['nl_ent'] = function()
 
         _init_avatar_bridge()
 
-    if not _avatar_pending[xuid] then
+        -- Kick off the JS fetch if not already pending
+        if not _avatar_pending[xuid] then
             _avatar_pending[xuid] = true
             panorama.loadstring(
-                'if(window.__nl_ent_avatar_fetch) window.__nl_ent_avatar_fetch('' + xuid + '')',
+                'if(window.__nl_ent_avatar_fetch) window.__nl_ent_avatar_fetch("" + xuid + "")',
                 'CSGOHud'
             )
         end
@@ -892,11 +893,7 @@ local menu, group, reference, utils = { }, { }, { }, { }; do
         ot = pui.group('aa', 'other')
     }
 
-    utils = {
-        space = function(tab)
-            tab:label('\n')
-        end,
-        
+    utils = {        
         rgb_to_hex = function (color)
             return string.format('%02X%02X%02X%02X', color[1], color[2], color[3], color[4] or 255)
         end,
@@ -958,7 +955,8 @@ local menu, group, reference, utils = { }, { }, { }, { }; do
                 edge_yaw = pui.reference('aa', 'anti-aimbot angles', 'edge yaw'),
                 freestand_body = pui.reference('aa', 'anti-aimbot angles', 'freestanding body yaw'),
                 freestanding = {pui.reference('aa', 'anti-aimbot angles', 'freestanding')},
-                roll = pui.reference('aa', 'anti-aimbot angles', 'roll')
+                roll = pui.reference('aa', 'anti-aimbot angles', 'roll'),
+                edge = pui.reference('aa', 'anti-aimbot angles', 'edge yaw')
             },
     
             fakelag = {
@@ -994,14 +992,14 @@ local menu, group, reference, utils = { }, { }, { }, { }; do
     menu = {
         home = {
             main = group.fl:combobox(
-                '\f<child> nocturnal.\v' .. software.build:lower() == 'beta' and 'lc' or 'club', {
+                '\f<child> nocturnal.\v' .. (software.build:lower() == 'beta' and 'lc' or 'club'), {
                     'Main',
                     'Anti-aimbot',
                     'Other'
                 }
             )
         },
-        antiaimbot = {
+        antiaim = {
             main = group.fl:combobox(
                 '\n>.<', {
                     'Builder',
@@ -1023,10 +1021,10 @@ local menu, group, reference, utils = { }, { }, { }, { }; do
                         'Manual yaw'
                     ),
                     left = group.aa:hotkey(
-                        '\f<child> Left', 0x00
+                        '\f<child> Left'
                     ),
                     right = group.aa:hotkey(
-                        '\f<child> Right',
+                        '\f<child> Right'
                     ),
                     forward = group.aa:hotkey(
                         '\f<child> Forward'
@@ -1041,33 +1039,46 @@ local menu, group, reference, utils = { }, { }, { }, { }; do
 end
 
 local main_visibility, menu_visibility; do
-    main_visibility = function(tabs, visibility)
-        for i = 1, #tabs do
-            for _, v in pairs(tabs[i]) do
-                for _, item in ipairs(v) do
-                    item:set_visible(visibility)
-                end
-            end
-        end
-    end
+    main_visibility = (function(tabs, visibility)
+        local aa, fl, ot = reference.antiaim.angles, reference.antiaim.fakelag, reference.antiaim.other
 
-    main_visibility(
-        {
-            reference.antiaim.angles,
-            reference.antiaim.fakelag
-        },
-        false
-    )
+        if tabs:find('antiaim') then
+            aa.enabled:set_visible(visibility)
+            aa.pitch[1]:set_visible(visibility)
+            aa.pitch[2]:set_visible(visibility)
+            aa.yaw_base:set_visible(visibility)
+            aa.yaw[1]:set_visible(visibility)
+            aa.yaw[2]:set_visible(visibility)
+            aa.yaw_jitter[1]:set_visible(visibility)
+            aa.yaw_jitter[2]:set_visible(visibility)
+            aa.body_yaw[1]:set_visible(visibility)
+            aa.body_yaw[2]:set_visible(visibility)
+            aa.freestand_body:set_visible(visibility)
+            aa.freestanding[1]:set_visible(visibility)
+            aa.freestanding[1].hotkey:set_visible(visibility)
+            aa.roll:set_visible(visibility)
+            aa.edge:set_visible(visibility)
+        end
+        if tabs:find('fakelag') then
+            fl.enabled[1]:set_visible(visibility)
+            fl.enabled[1].hotkey:set_visible(visibility)
+            fl.amount:set_visible(visibility)
+            fl.variance:set_visible(visibility)
+            fl.limit:set_visible(visibility)
+        end
+        if tabs:find('other') then
+            ot.slow_motion[1]:set_visible(visibility)
+            ot.slow_motion[1].hotkey:set_visible(visibility)
+            ot.legs:set_visible(visibility)
+            ot.hide_shots[1]:set_visible(visibility)
+            ot.hide_shots[1].hotkey:set_visible(visibility)
+            ot.fakepeek[1]:set_visible(visibility)
+            ot.fakepeek[1].hotkey:set_visible(visibility)
+        end
+    end)('antiaim, fakelag', false)
 
     events.shutdown:set(function()
-        main_visibility(
-            {
-                reference.antiaim.angles,
-                reference.antiaim.fakelag,
-                reference.antiaim.other
-            },
-            true
-        )
+        main_visibility('antiaim, fakelag, other', true)
     end)
 
     menu_visibility = function()
@@ -1075,11 +1086,13 @@ local main_visibility, menu_visibility; do
         is_antiaim_tab   = {menu.home.main, 'Anti-aimbot'    }
         is_other_tab     = {menu.home.main, 'Other'          }
 
-        is_builder_tab   = {menu.antiaimbot.main, 'Builder'  }
-        is_defensive_tab = {menu.antiaimbot.main, 'Defensive'}
-        is_other_tab     = {menu.antiaimbot.main, 'Other'    }
+        is_builder_tab   = {menu.antiaim.main, 'Builder'  }
+        is_defensive_tab = {menu.antiaim.main, 'Defensive'}
+        is_other_tab     = {menu.antiaim.main, 'Other'    }
 
-        local aa = menu.antiaimbot
+        local aa = menu.antiaim
+
+        aa.main:depend({menu.home.main, 'Anti-aimbot'})
 
         aa.other.freestanding.switch:depend(is_antiaim_tab, is_other_tab)
         aa.other.freestanding.disablers:depend(is_antiaim_tab, is_other_tab, {aa.other.freestanding.switch, true})
@@ -1104,34 +1117,71 @@ local antiaim, builder = { }, { }; do
 
     antiaim.states = software.states
 
-    builder.selector = menu.group.aa:combobox(
-        '\n', antiaim.states
+    builder.selector = group.aa:combobox(
+        '\v{ ~ } Condition', antiaim.states
     ):depend(is_antiaim_tab, is_builder_tab)
 
     for _, state in ipairs(antiaim.states) do
         builder[state] = {
-            switch = state ~= 'Global' and group.aa:checkbox(
-                'Enable \f<child> ' .. state
-            ) or nil,
-            space = utils.space(group.aa),
-            yaw_left = group.aa:slider(
-                'Left', -180, 180, 0, true, '°'
+            switch = state ~= 'Global' and group.aa:checkbox('Enable \v' .. state) or nil,
+            yaw_type = group.aa:combobox('Yaw · \vType', {
+                'L&R',
+                'L&R Delayed'
+            }),
+            yaw_left = group.aa:slider('Yaw · \vLeft', 
+                -180, 180, 0, true, '°'
             ),
-            yaw_right = group.aa:slider(
-                'Right', -180, 180, 0, true, '°'
+            yaw_right = group.aa:slider('Yaw · \vRight',
+                -180, 180, 0, true, '°'    
             ),
-            yaw_randomization = group.aa:slider(
-                'Randomization', 0, 180, 0, true, '°'
+            yaw_randomization = group.aa:slider('Yaw · \vRandomize', 
+                0, 100, 0, true, '%'
+            ),
+            delay = { }, -- soon
+            jitter = group.aa:combobox('Jitter · \vType', {
+                'Off',
+                'Center',
+                'Offset',
+                'Random',
+                'Skitter'
+            }),
+            jitter_offset = group.aa:slider('Jitter · \vOffset',
+                -180, 180, 0, true, '°'
+            ),
+            jitter_randomization = group.aa:slider('Jitter · \vRandomize',
+                -180, 180, 0, true, '°'
+            ),
+            body_yaw = group.aa:checkbox('Body · \vYaw'),
+            body_yaw_options = group.aa:multiselect('Options', {
+                'Jitter',
+                'Randomize Jitter'
+            }),
+            body_yaw_mode = group.aa:combobox('Desync · \vMode', {
+                'Static',
+                'L&R'
+            }),
+            body_yaw_value = group.aa:slider('Desync · \vAmount',
+                0, 58, 0, true, '°'
             )
         }
 
         is_current_state = {builder.selector, state}
 
-        builder[state].switch:depend(is_antiaim_tab, is_builder_tab, is_current_state)
-        builder[state].space:depend(is_antiaim_tab, is_builder_tab, is_current_state)
+        if builder[state].switch then
+            builder[state].switch:depend(is_antiaim_tab, is_builder_tab, is_current_state)
+        end
+
+        builder[state].yaw_type:depend(is_antiaim_tab, is_builder_tab, is_current_state)
         builder[state].yaw_left:depend(is_antiaim_tab, is_builder_tab, is_current_state)
         builder[state].yaw_right:depend(is_antiaim_tab, is_builder_tab, is_current_state)
         builder[state].yaw_randomization:depend(is_antiaim_tab, is_builder_tab, is_current_state)
+        builder[state].jitter:depend(is_antiaim_tab, is_builder_tab, is_current_state)
+        builder[state].jitter_offset:depend(is_antiaim_tab, is_builder_tab, is_current_state)
+        builder[state].jitter_randomization:depend(is_antiaim_tab, is_builder_tab, is_current_state)
+        builder[state].body_yaw:depend(is_antiaim_tab, is_builder_tab, is_current_state)
+        builder[state].body_yaw_options:depend(is_antiaim_tab, is_builder_tab, is_current_state)
+        builder[state].body_yaw_mode:depend(is_antiaim_tab, is_builder_tab, is_current_state)
+        builder[state].body_yaw_value:depend(is_antiaim_tab, is_builder_tab, is_current_state)
     end
 
     antiaim.__state = function()
@@ -1165,7 +1215,7 @@ local antiaim, builder = { }, { }; do
 
     antiaim.get_state = function()
         local __state = self:__state()
-        local tab = menu.antiaimbot.other
+        local tab = menu.antiaim.other
         local manual = (function()
             return false --soon
         end)()
