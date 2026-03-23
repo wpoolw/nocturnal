@@ -1,8 +1,3 @@
--- nl_ent.lua
--- Neverlose entity API compatibility layer for Gamesense.
--- Paste this file anywhere in your script, then do:
---   local entity = require('nl_ent')
-
 package.preload['nl_ent'] = function()
 
     ---@class NLEntity
@@ -260,11 +255,10 @@ package.preload['nl_ent'] = function()
 
         _init_avatar_bridge()
 
-        -- Kick off the JS fetch if not already pending
-        if not _avatar_pending[xuid] then
+    if not _avatar_pending[xuid] then
             _avatar_pending[xuid] = true
             panorama.loadstring(
-                'if(window.__nl_ent_avatar_fetch) window.__nl_ent_avatar_fetch('' .. xuid .. '')',
+                'if(window.__nl_ent_avatar_fetch) window.__nl_ent_avatar_fetch('' + xuid + '')',
                 'CSGOHud'
             )
         end
