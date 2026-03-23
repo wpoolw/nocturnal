@@ -1038,7 +1038,7 @@ local menu, group, reference, utils = { }, { }, { }, { }; do
     }
 end
 
-local main_visibility, menu_visibility; do
+local main_visibility, menu_visibility, is_home_tab, is_antiaim_tab, is_other_tab, is_builder_tab, is_defensive_tab; do
     main_visibility = (function(tabs, visibility)
         local aa, fl, ot = reference.antiaim.angles, reference.antiaim.fakelag, reference.antiaim.other
 
@@ -1081,15 +1081,15 @@ local main_visibility, menu_visibility; do
         main_visibility('antiaim, fakelag, other', true)
     end)
 
+    is_home_tab      = {menu.home.main, 'Main'}
+    is_antiaim_tab   = {menu.home.main, 'Anti-aimbot'}
+    is_other_tab     = {menu.hpme.main, 'Other'}
+
+    is_other_tab     = {menu.antiaim.main, 'Other'}
+    is_builder_tab   = {menu.antiaim.main, 'Builder'}
+    is_defensive_tab = {menu.antiaim.main, 'Defensive'}
+
     menu_visibility = function()
-        is_home_tab      = {menu.home.main, 'Main'           }
-        is_antiaim_tab   = {menu.home.main, 'Anti-aimbot'    }
-        is_other_tab     = {menu.home.main, 'Other'          }
-
-        is_builder_tab   = {menu.antiaim.main, 'Builder'  }
-        is_defensive_tab = {menu.antiaim.main, 'Defensive'}
-        is_other_tab     = {menu.antiaim.main, 'Other'    }
-
         local aa = menu.antiaim
 
         aa.main:depend({menu.home.main, 'Anti-aimbot'})
@@ -1118,7 +1118,7 @@ local antiaim, builder = { }, { }; do
     antiaim.states = software.states
 
     builder.selector = group.aa:combobox(
-        '\v{ ~ } Condition', antiaim.states
+        '\v{ ~ }\r Condition', antiaim.states
     ):depend(is_antiaim_tab, is_builder_tab)
 
     for _, state in ipairs(antiaim.states) do
